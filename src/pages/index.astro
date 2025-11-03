@@ -1,118 +1,142 @@
 ---
+// 1. Importamos nuestro Layout
 import MainLayout from '../layouts/MainLayout.astro';
-// Importamos el componente de React
-import { SearchInput } from '../components/SearchInput.jsx';
 
-// --- Lógica de API (adaptada a TMDB) ---
-const API_KEY = import.meta.env.PUBLIC_TMDB_API_KEY;
-const API_BASE_URL = "https://api.themoviedb.org/3";
-const IMG_BASE_URL = "https://image.tmdb.org/t/p/w500"; // URL para pósters
-
+// --- (Lógica de búsqueda y populares) ---
+const API_KEY = import.meta.env.PUBLIC_RAWG_API_KEY;
 const query = Astro.url.searchParams.get('q');
-let movies = [];
-let pageTitle = "Películas Populares";
 
-const apiParams = `?api_key=${API_KEY}&language=es-ES`;
+let searchResults = []; // Para los resultados de búsqueda
+let popularGames = []; // Para los juegos populares
 
 if (query) {
-  // --- LÓGICA DE BÚSQUEDA FINAL (cuando el usuario presiona Enter) ---
-  pageTitle = `Resultados para "${query}"`;
-  
+  // --- LÓGICA DE BÚSQUEDA ---
   try {
     const response = await fetch(
-      `${API_BASE_URL}/search/movie${apiParams}&query=${query}`
+      `https://api.rawg.io/api/games?key=${API_KEY}&search=${query}`
     );
     const data = await response.json();
-    movies = data.results;
-
+    if (data.results) {
+      searchResults = data.results;
+    }
   } catch (error) {
-    console.error("Error en el fetch de búsqueda final:", error);
+    console.error("Error en el fetch de búsqueda:", error.message);
   }
-
 } else {
-  // --- LÓGICA DE POPULARES ---
+  // --- LÓGICA DE POPULARES (si no hay búsqueda) ---
   try {
     const response = await fetch(
-      `${API_BASE_URL}/movie/popular${apiParams}`
+      `https://api.rawg.io/api/games?key=${API_KEY}&ordering=-added`
     );
     const data = await response.json();
-    movies = data.results;
-  
+    if (data.results) {
+      popularGames = data.results.slice(0, 12);
+    }
   } catch (error) {
-    console.error("Error en el fetch de populares:", error);
+    console.error("Error en el fetch de populares:", error.message);
   }
 }
 ---
 
-<MainLayout title={pageTitle}>
-  
-  {/* Usamos el componente de React para la barra de búsqueda */}
-  <SearchInput client:load /> 
-  {/* 'client:load' le dice a Astro que este componente debe cargarse en el cliente (navegador) */}
+<MainLayout title="Buscador">
 
-  <section class="results-container">
-    <h2>{pageTitle.toUpperCase()}</h2>
-    <div class="results-grid">
-      {movies.length > 0 ? (
-        movies.map((movie) => (
-          <a href={`/movie/${movie.id}`} class="movie-card">
-            {movie.poster_path ? (
-              <img src={`${IMG_BASE_URL}${movie.poster_path}`} alt={`Póster de ${movie.title}`} />
-            ) : (
-              <div class="poster-placeholder">Sin Imagen</div>
-            )}
-            <h3>{movie.title}</h3>
-            <p>Rating: {movie.vote_average.toFixed(1)} / 10</p>
-          </a>
-        ))
-      ) : (
-        <p>No se encontraron resultados.</p>
-      )}
-    </div>
-  </section>
+  <form method="GET" class="search-form">
+    <label for="q">BUSCAR JUEGO:</label>
+    <input 
+      type="text" 
+      name="q" 
+      id="q" 
+      placeholder="Escribe aquí..."
+      value={query || ''} 
+    />
+    <button type="submit">[ BUSCAR ]</button>
+  </form>
+
+  {
+    query ? (
+      <section class="results-container">
+        <h2>[ RESULTADOS DE BÚSQUEDA PARA: "{query.toUpperCase()}" ]</h2>
+        <div class="results-grid">
+          {searchResults.length > 0 ? (
+            searchResults.map((game) => (
+              <a href={`/game/${game.slug}`} class="game-card">
+                <img src={game.background_image} alt={`Portada de ${game.name}`} />
+                <h3>{game.name}</h3>
+                <p>Rating: {game.rating} / 5</p>
+              </a>
+            ))
+          ) : (
+            <p>No se encontraron resultados.</p>
+          )}
+        </div>
+      </section>
+
+    ) : (
+
+      <section class="home-content">
+        
+        <div class="motd-box">
+          <h3>[ MENSAJE DEL DÍA ]</h3>
+          <p>SYSTEM STATUS: <span class="status-ok">ONLINE</span></p>
+          <p>CONECTADO A: BASE DE DATOS RAWG v3.4</p>
+          <p>Bienvenido, operativo. Utilice la terminal de búsqueda superior para consultar una entrada del sistema.</p>
+        </div>
+
+        <h2>[ ENTRADAS POPULARES DEL SISTEMA ]</h2>
+        <div class="results-grid">
+          {popularGames.map((game) => (
+            <a href={`/game/${game.slug}`} class="game-card">
+              <img src={game.background_image} alt={`Portada de ${game.name}`} />
+              <h3>{game.name}</h3>
+              <p>Rating: {game.rating} / 5</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
 
 </MainLayout>
 
 <style>
-  /* Aquí quitamos los estilos del antiguo search-form, ya que ahora los tiene el componente de React */
-  /* Los estilos de .results-grid, .movie-card, .poster-placeholder se mantienen */
-
-  h2 {
-    margin-bottom: 1.5rem;
-    margin-top: 2rem; /* Añadir un poco de espacio después del buscador */
+  /* Estructura del buscador */
+  .search-form {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem; /* Mantenemos el padding interno */
+    margin-bottom: 2rem;
   }
-  
+  .search-form button { 
+    cursor: pointer; 
+  }
+
+  /* Estructura del Grid de resultados */
   .results-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
   }
   
-  .movie-card {
+  /* Estructura de la tarjeta */
+  .game-card {
     padding: 1rem;
   }
-  .movie-card h3 {
-    margin: 0.5rem 0;
-    font-size: 1rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .movie-card img {
+  .game-card img {
     width: 100%;
-    height: 300px;
+    height: 150px;
     object-fit: cover;
-    border-radius: 8px; 
+    margin-bottom: 0.5rem;
+    image-rendering: pixelated;
   }
 
-  .poster-placeholder {
-    width: 100%;
-    height: 300px;
-    display: grid;
-    place-items: center;
-    background-color: #222;
-    border-radius: 8px;
-    font-size: 0.9rem;
-    color: #777;
+  /* Estructura del Mensaje del día */
+  .motd-box {
+    padding: 1rem;
+    margin-bottom: 2rem;
+  }
+  .motd-box p {
+    margin: 0.5rem 0;
+    line-height: 1.6;
   }
 </style>

@@ -1,0 +1,234 @@
+---
+// 1. Importamos el Layout
+import MainLayout from '../../layouts/MainLayout.astro';
+
+// --- (Lógica del fetch - SIN CAMBIOS) ---
+const { slug } = Astro.params;
+const API_KEY = import.meta.env.PUBLIC_RAWG_API_KEY;
+
+let game = null;
+let similarGames = []; 
+
+try {
+  const response = await fetch(
+    `https://api.rawg.io/api/games/${slug}?key=${API_KEY}`
+  );
+  
+  if (response.ok) {
+    game = await response.json();
+
+    if (game) {
+      const similarResponse = await fetch(
+        `https://api.rawg.io/api/games/${game.slug}/suggested?key=${API_KEY}`
+      );
+      if (similarResponse.ok) {
+        const similarData = await similarResponse.json();
+        similarGames = similarData.results.slice(0, 6); 
+      }
+    }
+  }
+
+} catch (error) {
+  console.error("Error al contactar la API:", error);
+} 
+
+// Función helper (SIN CAMBIOS)
+function stripHtml(html) {
+  if (!html) return "No hay descripción disponible.";
+  return html.replace(/<[^>]*>?/gm, '');
+}
+
+const description = stripHtml(game?.description);
+const pageTitle = game ? game.name.toUpperCase() : "JUEGO NO ENCONTRADO";
+
+// Extracción de datos (SIN CAMBIOS)
+const developers = game?.developers?.map(d => d.name).join(', ') || 'N/A';
+const publishers = game?.publishers?.map(p => p.name).join(', ') || 'N/A';
+---
+
+<MainLayout title={pageTitle}>
+  
+  <a href="/" class="back-link">[ &lt; VOLVER AL BUSCADOR ]</a>
+
+  <div class="game-detail-container">
+    {game ? (
+      <>
+        <aside class="game-aside">
+          <img src={game.background_image} alt={`Portada de ${game.name}`} />
+          
+          <div class="info-box">
+            <h3>[ DATOS ]</h3>
+            <p><strong>Lanzamiento:</strong> {game.released || 'N/A'}</p>
+            <p><strong>Rating:</strong> {game.rating} / 5 ({game.ratings_count} votos)</p>
+            <p><strong>Metacritic:</strong> {game.metacritic || 'N/A'}</p>
+            <p><strong>Desarrolladora:</strong> {developers}</p>
+            <p><strong>Publisher:</strong> {publishers}</p>
+          </div>
+
+          <div class="info-box">
+            <h3>[ PLATAFORMAS ]</h3>
+            <ul>
+              {game.platforms.map(p => (
+                <li>{p.platform.name}</li>
+              ))}
+            </ul>
+          </div>
+        </aside>
+
+        <section class="game-content">
+          <div class="info-box">
+            <h3>[ DESCRIPCIÓN ]</h3>
+            <p class="description" lang="en">{description}</p>
+          </div>
+
+          <div class="info-box">
+            <h3>[ TIEMPO Y COMUNIDAD ]</h3>
+            {game.playtime > 0 ? (
+              <p><strong>Historia Principal:</strong> {game.playtime} horas (aprox.)</p>
+            ) : (
+              <p>Datos de HLTB no disponibles.</p>
+            )}
+            {game.added_by_status && (
+              <ul class="community-stats">
+                <li><strong>Completado:</strong> {game.added_by_status.beaten || 0}</li>
+                <li><strong>Jugando:</strong> {game.added_by_status.playing || 0}</li>
+                <li><strong>Pendiente:</strong> {game.added_by_status.toplay || 0}</li>
+                <li><strong>Abandonado:</strong> {game.added_by_status.dropped || 0}</li>
+              </ul>
+            )}
+          </div>
+          
+          <div class="info-box">
+            <h3>[ GÉNEROS ]</h3>
+            <div class="tags">
+              {game.genres.map(g => (
+                <span class="tag">{g.name}</span>
+              ))}
+            </div>
+          </div>
+
+          {similarGames.length > 0 && (
+            <div class="info-box">
+              <h3>[ RECOMENDACIONES DEL SISTEMA ]</h3>
+              <div class="similar-grid">
+                {similarGames.map(simGame => (
+                  <a href={`/game/${simGame.slug}`} class="similar-card">
+                    <img src={simGame.background_image} alt={simGame.name} />
+                    <span>{simGame.name}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      </>
+    ) : (
+      <p>Cargando datos del juego o juego no encontrado...</p>
+    )}
+  </div>
+
+</MainLayout>
+
+<style>
+  .back-link {
+    font-size: 1.2rem;
+    display: block;
+    margin-bottom: 1rem;
+  }
+  
+  /* Estilo de lista retro, único de esta página */
+  ul {
+    list-style-type: '■ '; 
+    padding-left: 20px;
+    margin: 0;
+  }
+
+  /* Layout principal de 2 columnas */
+  .game-detail-container {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    margin-top: 1rem;
+  }
+
+  .game-aside img {
+    width: 100%;
+    image-rendering: pixelated;
+  }
+  
+  .info-box {
+    padding: 1rem;
+    margin-top: 1.5rem;
+  }
+  
+  .info-box h3 {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+  }
+  
+  .info-box p {
+    white-space: pre-wrap;
+  }
+
+  .description {
+    line-height: 1.6;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 10px;
+  }
+  
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .tag {
+    padding: 0.25rem 0.5rem;
+  }
+
+  /* Media query para móviles */
+  @media (max-width: 768px) {
+    .game-detail-container {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Estructura de Stats */
+  .community-stats {
+    margin-top: 1rem;
+    padding-left: 25px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .community-stats li {
+    font-size: 1.1rem;
+  }
+
+  /* Estructura de Grid Similar */
+  .similar-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  
+  .similar-card img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    image-rendering: pixelated;
+  }
+  
+  .similar-card span {
+    display: block;
+    padding: 0.5rem;
+    font-size: 1.1rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
