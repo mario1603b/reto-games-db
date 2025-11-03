@@ -1,0 +1,142 @@
+---
+// 1. Importamos nuestro Layout
+import MainLayout from '../layouts/MainLayout.astro';
+
+// --- (Lógica de búsqueda y populares) ---
+const API_KEY = import.meta.env.PUBLIC_RAWG_API_KEY;
+const query = Astro.url.searchParams.get('q');
+
+let searchResults = []; // Para los resultados de búsqueda
+let popularGames = []; // Para los juegos populares
+
+if (query) {
+  // --- LÓGICA DE BÚSQUEDA ---
+  try {
+    const response = await fetch(
+      `https://api.rawg.io/api/games?key=${API_KEY}&search=${query}`
+    );
+    const data = await response.json();
+    if (data.results) {
+      searchResults = data.results;
+    }
+  } catch (error) {
+    console.error("Error en el fetch de búsqueda:", error.message);
+  }
+} else {
+  // --- LÓGICA DE POPULARES (si no hay búsqueda) ---
+  try {
+    const response = await fetch(
+      `https://api.rawg.io/api/games?key=${API_KEY}&ordering=-added`
+    );
+    const data = await response.json();
+    if (data.results) {
+      popularGames = data.results.slice(0, 12);
+    }
+  } catch (error) {
+    console.error("Error en el fetch de populares:", error.message);
+  }
+}
+---
+
+<MainLayout title="Buscador">
+
+  <form method="GET" class="search-form">
+    <label for="q">BUSCAR JUEGO:</label>
+    <input 
+      type="text" 
+      name="q" 
+      id="q" 
+      placeholder="Escribe aquí..."
+      value={query || ''} 
+    />
+    <button type="submit">[ BUSCAR ]</button>
+  </form>
+
+  {
+    query ? (
+      <section class="results-container">
+        <h2>[ RESULTADOS DE BÚSQUEDA PARA: "{query.toUpperCase()}" ]</h2>
+        <div class="results-grid">
+          {searchResults.length > 0 ? (
+            searchResults.map((game) => (
+              <a href={`/game/${game.slug}`} class="game-card">
+                <img src={game.background_image} alt={`Portada de ${game.name}`} />
+                <h3>{game.name}</h3>
+                <p>Rating: {game.rating} / 5</p>
+              </a>
+            ))
+          ) : (
+            <p>No se encontraron resultados.</p>
+          )}
+        </div>
+      </section>
+
+    ) : (
+
+      <section class="home-content">
+        
+        <div class="motd-box">
+          <h3>[ MENSAJE DEL DÍA ]</h3>
+          <p>SYSTEM STATUS: <span class="status-ok">ONLINE</span></p>
+          <p>CONECTADO A: BASE DE DATOS RAWG v3.4</p>
+          <p>Bienvenido, operativo. Utilice la terminal de búsqueda superior para consultar una entrada del sistema.</p>
+        </div>
+
+        <h2>[ ENTRADAS POPULARES DEL SISTEMA ]</h2>
+        <div class="results-grid">
+          {popularGames.map((game) => (
+            <a href={`/game/${game.slug}`} class="game-card">
+              <img src={game.background_image} alt={`Portada de ${game.name}`} />
+              <h3>{game.name}</h3>
+              <p>Rating: {game.rating} / 5</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+</MainLayout>
+
+<style>
+  /* Estructura del buscador */
+  .search-form {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem; /* Mantenemos el padding interno */
+    margin-bottom: 2rem;
+  }
+  .search-form button { 
+    cursor: pointer; 
+  }
+
+  /* Estructura del Grid de resultados */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+  
+  /* Estructura de la tarjeta */
+  .game-card {
+    padding: 1rem;
+  }
+  .game-card img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    margin-bottom: 0.5rem;
+    image-rendering: pixelated;
+  }
+
+  /* Estructura del Mensaje del día */
+  .motd-box {
+    padding: 1rem;
+    margin-bottom: 2rem;
+  }
+  .motd-box p {
+    margin: 0.5rem 0;
+    line-height: 1.6;
+  }
+</style>

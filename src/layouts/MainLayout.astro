@@ -1,0 +1,151 @@
+---
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+const pageTitle = title ? `${title} :: RETRO DB` : "RETRO GAMES DB";
+---
+
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width" />
+  <title>{pageTitle}</title>
+</head>
+<body>
+
+  <header class="header-terminal">
+    <h1><a href="/">RETRO GAMES DB</a></h1>
+  </header>
+
+  <main>
+    <slot />
+  </main>
+
+</body>
+</html>
+
+<style is:global>
+  /* 1. TIPOGRAFÍA (Se mantiene 'Share Tech Mono') */
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+  body {
+    /* 2. PALETA DE COLORES (Se mantiene EVA-01) */
+    background-color: #0d0d0d; 
+    color: #e0e0e0; 
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 18px; 
+    margin: 0;
+    padding: 1rem;
+    
+    /* --- ¡NUEVO! FONDO NERV --- */
+    /* Mantenemos las scanlines */
+    background-image: 
+      linear-gradient(rgba(0,0,0,0.5) 50%, transparent 50%),
+      /* Añadimos un patrón de hexágonos morados y sutiles */
+      url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><path fill="%23a040d0" opacity="0.05" d="M20 0l-17.32 10v20L20 40l17.32-10V10L20 0z"></path></svg>');
+    background-size: 100% 4px, 40px 40px; /* Tamaño para cada fondo */
+  }
+
+  h1, h3 {
+    margin: 0;
+    text-transform: uppercase;
+  }
+  
+  a {
+    color: #a040d0; /* Morado */
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  a:hover {
+    background-color: #7fff00; /* Verde Lima */
+    color: #0d0d0d;
+  }
+
+  /* Cabecera Global */
+  .header-terminal {
+    border: 2px solid #a040d0; /* Morado */
+    padding: 1rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    /* Damos un fondo a la cabecera para que destaque sobre los hexágonos */
+    background-color: #0d0d0d; 
+  }
+  
+  .header-terminal h1 a {
+    color: #f37a24; /* Naranja */
+    /* --- ¡NUEVO! Efecto Glow --- */
+    text-shadow: 0 0 5px rgba(243, 122, 36, 0.7);
+  }
+  .header-terminal h1 a:hover {
+    background-color: #f37a24;
+    color: #0d0d0d;
+    text-shadow: none;
+  }
+
+  /* --- 3. ¡NUEVO! ESTILOS DE COMPONENTES "NERV" --- */
+  
+  /* Cajas de info y buscador */
+  .search-form,
+  .info-box,
+  .motd-box {
+    border: 1px solid #553c5f; /* Morado suave */
+    /* Damos un fondo sólido para que destaquen sobre los hexágonos */
+    background-color: #1a1a1a; 
+  }
+
+  /* --- ¡NUEVO! Títulos como "Bloques de Datos" --- */
+  h2,
+  .info-box h3,
+  .motd-box h3 {
+    color: #0d0d0d; /* Texto oscuro */
+    background-color: #f37a24; /* Fondo Naranja */
+    border-bottom: none;
+    padding: 4px 8px;
+    display: inline-block; /* Para que el fondo se ajuste al texto */
+  }
+  
+  /* Botones y tags */
+  .search-form input, 
+  .search-form button,
+  .tag {
+    background-color: #7fff00; /* Verde Lima */
+    color: #0d0d0d; 
+    border: 1px solid #7fff00;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 18px; 
+  }
+  
+  .search-form input {
+    background-color: #e0e0e0;
+  }
+  
+  .search-form input::placeholder {
+    color: #333;
+  }
+  
+  /* Tarjetas de juego */
+  .game-card,
+  .similar-card {
+    border: 1px solid #553c5f; /* Morado suave */
+    /* Damos un fondo sólido para que destaquen */
+    background-color: #1a1a1a;
+  }
+  .game-card:hover,
+  .similar-card:hover {
+    border-color: #7fff00; /* Verde Lima */
+    background-color: rgba(127, 255, 0, 0.1);
+  }
+  
+  .game-card img,
+  .similar-card img {
+    border: 1px solid #553c5f;
+  }
+  
+  /* --- ¡NUEVO! Efecto Glow en texto destacado --- */
+  .status-ok,
+  .community-stats li strong {
+    color: #7fff00; /* Verde Lima */
+    text-shadow: 0 0 5px rgba(127, 255, 0, 0.7);
+  }
+</style>
