@@ -1,0 +1,287 @@
+---
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+const pageTitle = title ? `${title} :: MOVIES DB` : "MODERN MOVIES DB";
+---
+
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width" />
+  <title>{pageTitle}</title>
+  
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+</head>
+<body>
+
+  <header class="header-global">
+    <h1><a href="/">MODERN MOVIES DB</a></h1>
+  </header>
+
+  <main>
+    <slot />
+  </main>
+
+</body>
+</html>
+
+<style is:global>
+  /* --- 1. NUEVA TIPOGRAFÍA (Moderna, Sans-Serif) --- */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+  body {
+    /* --- 2. NUEVA PALETA DE COLORES (Dark Mode) --- */
+    background-color: #151525; /* Fondo azul/púrpura muy oscuro */
+    color: #e0e0e0;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    font-size: 16px; /* Tamaño estándar */
+    margin: 0;
+    padding: 1rem;
+    background-image: none; 
+  }
+
+  /* --- 3. GRADIENTES DE ACENTO (Estilo Astro) --- */
+  h1, h2,
+  .info-box h3,
+  .motd-box h3 {
+    margin: 0;
+    text-transform: uppercase;
+    font-weight: 900; /* Más grueso */
+    
+    background-image: linear-gradient(90deg, #8B5CF6, #06b6d4);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+  
+  a {
+    color: #8B5CF6; /* Morado/Violeta de acento */
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  a:hover {
+    color: #06b6d4; /* Cian de acento */
+    background-color: transparent;
+  }
+
+  /* Cabecera Global */
+  .header-global {
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Separador moderno */
+    padding: 1rem 0;
+    margin-bottom: 3rem;
+    text-align: center;
+    background-color: transparent;
+  }
+  
+  .header-global h1 a {
+    color: transparent; 
+    text-shadow: none; 
+  }
+  .header-global h1 a:hover {
+    background-color: transparent;
+    color: transparent;
+  }
+
+  /* --- 4. TARJETAS "GLASSMORPHISM" (Cristal) --- */
+  .search-form, /* <-- Este es del formulario antiguo, ya no se usa */
+  .info-box,
+  .motd-box,
+  .movie-card, /* <-- Nombre de clase nuevo */
+  .similar-card {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.03); /* Fondo muy transparente */
+    backdrop-filter: blur(10px); /* El efecto "cristal" */
+    border-radius: 12px; /* <-- ¡Bordes redondeados! */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); /* Sombra suave */
+  }
+  
+  /* Títulos de sección y cajas */
+  h2,
+  .info-box h3,
+  .motd-box h3 {
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: block; 
+  }
+  
+  /* Botones y tags (Estilo base) */
+  .tag {
+    background-color: #8B5CF6;
+    color: white;
+    border: none;
+    font-size: 12px;
+    padding: 0.25rem 0.75rem;
+    border-radius: 8px;
+  }
+  
+  /* Tarjetas de película (hover con "lift") */
+  .movie-card:hover,
+  .similar-card:hover {
+    border-color: #8B5CF6; /* Borde de acento */
+    transform: translateY(-4px); /* Efecto de "levantar" */
+    background-color: rgba(139, 92, 246, 0.1);
+  }
+  
+  .movie-card img,
+  .similar-card img {
+    border: none; /* Quitamos borde */
+    border-radius: 8px; /* Redondeamos la imagen */
+  }
+  
+  /* Texto destacado */
+  .status-ok,
+  .community-stats li strong {
+    color: #06b6d4; /* Acento cian */
+    text-shadow: none; /* Quitamos glow */
+  }
+
+  /*
+  =============================================================
+  ESTILOS PARA EL NUEVO COMPONENTE SearchInput.jsx
+  =============================================================
+  */
+  .search-form-interactive {
+    position: relative;
+    max-width: 600px; /* Para que no ocupe todo el ancho */
+    margin: 0 auto 3rem auto;
+    z-index: 10; /* Asegura que las sugerencias estén por encima de otros elementos */
+  }
+
+  .input-wrapper {
+    display: flex;
+    gap: 0; /* No hay espacio entre input y botón */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    overflow: hidden; /* Para que los bordes redondeados se apliquen bien */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  .search-form-interactive input {
+    flex-grow: 1; /* Ocupa todo el espacio disponible */
+    background: transparent; /* Fondo transparente */
+    border: none;
+    color: #e0e0e0;
+    padding: 0.8rem 1.2rem;
+    font-size: 1.1rem;
+    outline: none; /* Quitar el borde de foco por defecto */
+    font-family: 'Inter', system-ui, sans-serif; /* Heredar fuente */
+  }
+  .search-form-interactive input::placeholder {
+    color: #a0a0a0;
+  }
+
+  .search-form-interactive button {
+    background-color: #8B5CF6;
+    color: white;
+    border: none;
+    padding: 0.8rem 1.5rem;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: background-color 0.2s ease;
+    border-radius: 0; /* Quitar el redondeado aquí */
+  }
+  .search-form-interactive button:hover {
+    background-color: #7c4ee3;
+  }
+
+  .suggestions-list {
+    position: absolute;
+    top: 100%; /* Justo debajo del input */
+    left: 0;
+    right: 0;
+    background-color: rgba(255, 255, 255, 0.08); /* Un poco más oscuro que el input */
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-top: none; /* Sin borde superior para que se "una" al input */
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 400px; /* Limitar altura del scroll */
+    overflow-y: auto;
+  }
+
+  .suggestion-item a {
+    display: flex;
+    align-items: center;
+    padding: 0.8rem 1.2rem;
+    color: #e0e0e0;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+  }
+
+  .suggestion-item a:hover {
+    background-color: rgba(139, 92, 246, 0.2); /* Fondo de acento al pasar el ratón */
+    color: #e0e0e0; /* Mantener color de texto */
+  }
+
+  .suggestion-item img {
+    width: 40px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-right: 1rem;
+  }
+
+  .suggestion-item .placeholder-thumb {
+    width: 40px;
+    height: 60px;
+    background-color: #444;
+    border-radius: 4px;
+    margin-right: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    color: #aaa;
+  }
+
+  .suggestion-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .suggestion-info span {
+    font-weight: bold;
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .suggestion-info small {
+    color: #a0a0a0;
+    font-size: 0.8rem;
+  }
+
+  .suggestions-status,
+  .suggestions-error {
+    padding: 1rem;
+    text-align: center;
+    color: #a0a0a0;
+    font-style: italic;
+    font-size: 0.9rem;
+    position: absolute; /* Para que quede dentro del flujo del buscador */
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-top: none;
+    backdrop-filter: blur(10px);
+  }
+  .suggestions-error {
+    color: #ff6b6b; /* Rojo para errores */
+  }
+</style>

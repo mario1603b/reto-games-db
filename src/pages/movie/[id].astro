@@ -1,0 +1,254 @@
+---
+// 1. Importamos Layout
+import MainLayout from '../../layouts/MainLayout.astro';
+
+// Solución al error de SSG
+export const prerender = false;
+
+// --- Lógica de API (adaptada a TMDB) ---
+const { id } = Astro.params;
+const API_KEY = import.meta.env.PUBLIC_TMDB_API_KEY;
+const API_BASE_URL = "https://api.themoviedb.org/3";
+const IMG_BASE_URL = "https://image.tmdb.org/t/p/w500";
+const THUMB_BASE_URL = "https://image.tmdb.org/t/p/w200"; // Para las fotos de actores
+
+let movie = null;
+let similarMovies = [];
+let director = 'N/A';
+let studios = 'N/A';
+let cast = []; // <-- ¡NUEVO! Lista de actores
+let trailerKey = null; // <-- ¡NUEVO! Clave del tráiler de YouTube
+
+try {
+  // Fetch con "append_to_response=credits,similar,videos"
+  const response = await fetch(
+    `${API_BASE_URL}/movie/${id}?api_key=${API_KEY}&language=es-ES&append_to_response=credits,similar,videos`
+  );
+  
+  if (response.ok) {
+    movie = await response.json();
+    
+    // --- EXTRACCIÓN DE DATOS ---
+
+    // Director y Estudios (sin cambios)
+    const directorObj = movie.credits.crew.find(p => p.job === 'Director');
+    if (directorObj) director = directorObj.name;
+    
+    if (movie.production_companies.length > 0) {
+      studios = movie.production_companies.map(s => s.name).join(', ');
+    }
+    
+    // Actores (Cogemos los 10 primeros)
+    if (movie.credits.cast) {
+        cast = movie.credits.cast.slice(0, 10);
+    }
+    
+    // Tráiler (Buscamos un tráiler de YouTube)
+    if (movie.videos?.results) {
+        const officialTrailer = movie.videos.results.find(
+            video => video.site === "YouTube" && video.type === "Trailer"
+        );
+        if (officialTrailer) {
+            trailerKey = officialTrailer.key;
+        }
+    }
+
+    // Películas similares (sin cambios)
+    if (movie.similar.results) {
+      similarMovies = movie.similar.results.slice(0, 6);
+    }
+  }
+
+} catch (error) {
+  console.error("Error al contactar la API:", error);
+} 
+
+const pageTitle = movie ? movie.title : "Película no encontrada";
+---
+
+<MainLayout title={pageTitle}>
+  
+  <a href="/" class="back-link">[ &lt; VOLVER AL BUSCADOR ]</a>
+
+  <div class="movie-detail-container">
+    {movie ? (
+      <>
+        <aside class="movie-aside">
+          {movie.poster_path ? (
+            <img src={`${IMG_BASE_URL}${movie.poster_path}`} alt={`Póster de ${movie.title}`} />
+          ) : (
+            <div class="poster-placeholder">Sin Imagen</div>
+          )}
+          
+          <div class="info-box">
+            <h3>[ DATOS ]</h3>
+            <p><strong>Lanzamiento:</strong> {movie.release_date || 'N/A'}</p>
+            <p><strong>Rating:</strong> {movie.vote_average.toFixed(1)} / 10 ({movie.vote_count} votos)</p>
+            <p><strong>Director:</strong> {director}</p>
+            <p><strong>Estudio(s):</strong> {studios}</p>
+            <p><strong>Duración:</strong> {movie.runtime} minutos</p>
+          </div>
+        </aside>
+
+        <section class="movie-content">
+          
+          {trailerKey && (
+            <div class="info-box trailer-box">
+              <h3>[ TRÁILER OFICIAL ]</h3>
+              <div class="video-wrapper">
+                <iframe 
+                  src={`https://www.youtube.com/embed/${trailerKey}`}
+                  frameborder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowfullscreen>
+                </iframe>
+              </div>
+            </div>
+          )}
+
+          <div class="info-box">
+            <h3>[ SINOPSIS ]</h3>
+            <p class="description">{movie.overview || "Sinopsis no disponible."}</p>
+          </div>
+          
+          {cast.length > 0 && (
+            <div class="info-box cast-box">
+              <h3>[ REPARTO PRINCIPAL ]</h3>
+              <div class="cast-grid">
+                {cast.map(actor => (
+                  <div class="actor-card">
+                    {actor.profile_path ? (
+                      <img src={`${THUMB_BASE_URL}${actor.profile_path}`} alt={actor.name} />
+                    ) : (
+                      <div class="placeholder-thumb"></div>
+                    )}
+                    <p class="actor-name">{actor.name}</p>
+                    <small class="character-name">{actor.character}</small>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <div class="info-box">
+            <h3>[ GÉNEROS ]</h3>
+            <div class="tags">
+              {movie.genres.map(g => (
+                <span class="tag">{g.name}</span>
+              ))}
+            </div>
+          </div>
+
+          {similarMovies.length > 0 && (
+            <div class="info-box">
+              <h3>[ RECOMENDACIONES ]</h3>
+              <div class="similar-grid">
+                {similarMovies.map(simMovie => (
+                  <a href={`/movie/${simMovie.id}`} class="similar-card">
+                    {simMovie.poster_path ? (
+                      <img src={`${IMG_BASE_URL}${simMovie.poster_path}`} alt={simMovie.title} />
+                    ) : (
+                      <div class="poster-placeholder-small">Sin Imagen</div>
+                    )}
+                    <span>{simMovie.title}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      </>
+    ) : (
+      <p>Cargando datos de la película...</p>
+    )}
+  </div>
+
+</MainLayout>
+
+<style>
+  /* [ESTRUCTURA SIN CAMBIOS] */
+  .back-link { font-size: 1rem; display: block; margin-bottom: 1.5rem; font-weight: 700; }
+  ul { list-style-type: '› '; padding-left: 20px; margin: 0; }
+  .movie-detail-container { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; max-width: 1400px; margin: 0 auto; margin-top: 1rem; }
+  .movie-aside img { width: 100%; border-radius: 8px; }
+  .info-box { padding: 1.5rem; margin-top: 1.5rem; }
+  .info-box h3 { margin-bottom: 1rem; }
+  .info-box p { white-space: pre-wrap; line-height: 1.6; }
+  .description { line-height: 1.7; font-size: 1.1rem; }
+  .tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  @media (max-width: 768px) { .movie-detail-container { grid-template-columns: 1fr; } }
+  .similar-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .similar-card { padding: 1rem; }
+  .similar-card img { width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 0.5rem; }
+  .similar-card span { display: block; font-size: 0.9rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .poster-placeholder, .poster-placeholder-small { display: grid; place-items: center; background-color: #222; border-radius: 8px; font-size: 0.9rem; color: #777; }
+  .poster-placeholder { width: 100%; height: 450px; }
+  .poster-placeholder-small { width: 100%; height: 150px; }
+  /* [FIN DE ESTRUCTURA SIN CAMBIOS] */
+
+  /* --- ¡NUEVOS ESTILOS PARA TRÁILER Y ACTORES! --- */
+
+  /* Contenedor del Iframe (para hacerlo responsivo) */
+  .video-wrapper {
+    position: relative;
+    padding-bottom: 56.25%; /* Ratio 16:9 */
+    height: 0;
+    overflow: hidden;
+    margin-top: 1rem;
+    border-radius: 8px;
+  }
+  .video-wrapper iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+  }
+
+  /* Grid de Actores */
+  .cast-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  .actor-card {
+    text-align: center;
+    font-size: 0.9rem;
+  }
+  .actor-card img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 0.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .actor-card .actor-name {
+    margin: 0;
+    font-weight: bold;
+    color: #e0e0e0;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .actor-card .character-name {
+    margin: 0;
+    color: #a0a0a0;
+    line-height: 1.2;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .actor-card .placeholder-thumb {
+    width: 100%;
+    height: 100px;
+    background-color: #333;
+    border-radius: 8px;
+    margin-bottom: 0.4rem;
+  }
+</style>

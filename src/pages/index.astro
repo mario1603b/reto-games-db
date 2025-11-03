@@ -1,0 +1,118 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+// Importamos el componente de React
+import { SearchInput } from '../components/SearchInput.jsx';
+
+// --- Lógica de API (adaptada a TMDB) ---
+const API_KEY = import.meta.env.PUBLIC_TMDB_API_KEY;
+const API_BASE_URL = "https://api.themoviedb.org/3";
+const IMG_BASE_URL = "https://image.tmdb.org/t/p/w500"; // URL para pósters
+
+const query = Astro.url.searchParams.get('q');
+let movies = [];
+let pageTitle = "Películas Populares";
+
+const apiParams = `?api_key=${API_KEY}&language=es-ES`;
+
+if (query) {
+  // --- LÓGICA DE BÚSQUEDA FINAL (cuando el usuario presiona Enter) ---
+  pageTitle = `Resultados para "${query}"`;
+  
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/search/movie${apiParams}&query=${query}`
+    );
+    const data = await response.json();
+    movies = data.results;
+
+  } catch (error) {
+    console.error("Error en el fetch de búsqueda final:", error);
+  }
+
+} else {
+  // --- LÓGICA DE POPULARES ---
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/movie/popular${apiParams}`
+    );
+    const data = await response.json();
+    movies = data.results;
+  
+  } catch (error) {
+    console.error("Error en el fetch de populares:", error);
+  }
+}
+---
+
+<MainLayout title={pageTitle}>
+  
+  {/* Usamos el componente de React para la barra de búsqueda */}
+  <SearchInput client:load /> 
+  {/* 'client:load' le dice a Astro que este componente debe cargarse en el cliente (navegador) */}
+
+  <section class="results-container">
+    <h2>{pageTitle.toUpperCase()}</h2>
+    <div class="results-grid">
+      {movies.length > 0 ? (
+        movies.map((movie) => (
+          <a href={`/movie/${movie.id}`} class="movie-card">
+            {movie.poster_path ? (
+              <img src={`${IMG_BASE_URL}${movie.poster_path}`} alt={`Póster de ${movie.title}`} />
+            ) : (
+              <div class="poster-placeholder">Sin Imagen</div>
+            )}
+            <h3>{movie.title}</h3>
+            <p>Rating: {movie.vote_average.toFixed(1)} / 10</p>
+          </a>
+        ))
+      ) : (
+        <p>No se encontraron resultados.</p>
+      )}
+    </div>
+  </section>
+
+</MainLayout>
+
+<style>
+  /* Aquí quitamos los estilos del antiguo search-form, ya que ahora los tiene el componente de React */
+  /* Los estilos de .results-grid, .movie-card, .poster-placeholder se mantienen */
+
+  h2 {
+    margin-bottom: 1.5rem;
+    margin-top: 2rem; /* Añadir un poco de espacio después del buscador */
+  }
+  
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .movie-card {
+    padding: 1rem;
+  }
+  .movie-card h3 {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .movie-card img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 8px; 
+  }
+
+  .poster-placeholder {
+    width: 100%;
+    height: 300px;
+    display: grid;
+    place-items: center;
+    background-color: #222;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #777;
+  }
+</style>
